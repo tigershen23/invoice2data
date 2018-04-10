@@ -7,6 +7,8 @@ import os
 from os.path import join
 import logging
 
+from pdb import set_trace
+
 from .input import pdftotext
 from .input import pdfminer
 from .input import tesseract
@@ -36,7 +38,10 @@ output_mapping = {
     'none': None
     }
 
-def extract_data(invoicefile, templates=None, input_module=pdftotext):
+def extract_data(invoicefile, templates=None, input_module=pdftotext, debug=False):
+    if debug:
+        logging.basicConfig(level=logging.DEBUG)
+
     if templates is None:
         templates = read_templates()
 
@@ -53,6 +58,12 @@ def extract_data(invoicefile, templates=None, input_module=pdftotext):
         if t.matches_input(optimized_str):
             return t.extract(optimized_str)
 
+    default_template = next((t for t in templates if 'default' in t['template_name']),None)
+    if default_template:
+        logger.error("Falling back to default template.")
+        return default_template.extract(default_template.prepare_input(extracted_str))
+
+    # Master template
     logger.error('No template for %s', invoicefile)
     return False
 
@@ -79,7 +90,7 @@ def create_parser():
 
     parser.add_argument('--template-folder', '-t', dest='template_folder',
                         help='Folder containing invoice templates in yml file. Always adds built-in templates.')
-    
+
     parser.add_argument('--exclude-built-in-templates', dest='exclude_built_in_templates',
                         default=False, help='Ignore built-in templates.', action="store_true")
 
@@ -103,7 +114,7 @@ def main(args=None):
     output_module = output_mapping[args.output_format]
 
     templates = []
-    
+
     # Load templates from external folder if set.
     if args.template_folder:
         templates += read_templates(os.path.abspath(args.template_folder))
@@ -111,7 +122,7 @@ def main(args=None):
     # Load internal templates, if not disabled.
     if not args.exclude_built_in_templates:
         templates += read_templates()
-    
+
     output = []
     for f in args.input_files:
         res = extract_data(f.name, templates=templates, input_module=input_module)

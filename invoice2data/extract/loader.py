@@ -45,19 +45,20 @@ def read_templates(folder=None):
     for path, subdirs, files in os.walk(folder):
         for name in sorted(files):
             if name.endswith('.yml'):
-                with codecs.open(os.path.join(path, name), encoding=chardet.detect(open(os.path.join(path, name), 'rb').read())['encoding']) as template_file:
-                    tpl = ordered_load(template_file.read())
-                tpl['template_name'] = name
+                with open(os.path.join(path, name), 'rb') as f:
+                    with codecs.open(os.path.join(path, name), encoding=chardet.detect(f.read())['encoding']) as template_file:
+                        tpl = ordered_load(template_file.read())
+                    tpl['template_name'] = name
 
-                # Test if all required fields are in template:
-                assert 'keywords' in tpl.keys(), 'Missing keywords field.'
-                required_fields = ['date', 'amount', 'invoice_number']
-                assert len(set(required_fields).intersection(tpl['fields'].keys())) == len(required_fields), \
-                    'Missing required key in template {} {}. Found {}'.format(name, path, tpl['fields'].keys())
+                    # Test if all required fields are in template:
+                    assert 'keywords' in tpl.keys(), 'Missing keywords field.'
+                    required_fields = ['date', 'amount', 'invoice_number']
+                    assert len(set(required_fields).intersection(tpl['fields'].keys())) == len(required_fields), \
+                        'Missing required key in template {} {}. Found {}'.format(name, path, tpl['fields'].keys())
 
-                # Keywords as list, if only one.
-                if type(tpl['keywords']) is not list:
-                    tpl['keywords'] = [tpl['keywords']]
+                    # Keywords as list, if only one.
+                    if type(tpl['keywords']) is not list:
+                        tpl['keywords'] = [tpl['keywords']]
 
-                output.append(InvoiceTemplate(tpl))
+                    output.append(InvoiceTemplate(tpl))
     return output
