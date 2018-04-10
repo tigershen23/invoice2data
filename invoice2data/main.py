@@ -19,7 +19,6 @@ from .output import to_csv
 from .output import to_json
 from .output import to_xml
 
-
 logger = logging.getLogger(__name__)
 
 FILENAME = "{date} {desc}.pdf"

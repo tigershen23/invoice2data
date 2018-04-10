@@ -12,8 +12,10 @@ from unidecode import unidecode
 import logging as logger
 from collections import OrderedDict
 from .plugins import lines
+import autocorrect
 
 OPTIONS_DEFAULT = {
+    'spellcheck': False,
     'remove_whitespace': False,
     'remove_accents': False,
     'lowercase': False,
@@ -72,6 +74,20 @@ class InvoiceTemplate(OrderedDict):
         for replace in self.options['replace']:
             assert len(replace) == 2, 'A replace should be a list of 2 items'
             optimized_str = optimized_str.replace(replace[0], replace[1])
+
+        # spellcheck
+        if self.options['spellcheck']:
+            words = optimized_str.split()
+            for word in words:
+                if any(not char.isalpha() for char in word):
+                    continue
+
+                suggestion = autocorrect.spell(word)
+                if suggestion == word:
+                    continue
+
+                optimized_str = optimized_str.replace(word, suggestion)
+
 
         return optimized_str
 
