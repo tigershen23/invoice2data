@@ -99,6 +99,7 @@ class InvoiceTemplate(OrderedDict):
             return True
 
     def parse_number(self, value):
+        # Check is list or tuple; if so, grab first one
         assert value.count(self.options['decimal_separator']) < 2,\
             'Decimal separator cannot be present several times'
         # replace decimal separator by a |
@@ -163,18 +164,26 @@ class InvoiceTemplate(OrderedDict):
                             break
                 else:
                     res_find = re.findall(v, optimized_str)
+
                 if res_find:
                     logger.debug("res_find=%s", res_find)
+                    first_result = res_find[0]
+                    if isinstance(first_result, tuple):
+                        first_result = [value for value in first_result if value]
+                        first_result = first_result[0] if len(first_result) > 0 else None
+
+                    if not first_result:
+                        logger.warning("regexp for field %s didn't match", k)
                     if k.startswith('date') or k.endswith('date'):
-                        output[k] = self.parse_date(res_find[0])
+                        output[k] = self.parse_date(first_result)
                         if not output[k]:
                             logger.error(
-                                "Date parsing failed on date '%s'", res_find[0])
+                                "Date parsing failed on date '%s'", first_result)
                             return None
                     elif k.startswith('amount'):
-                        output[k] = self.parse_number(res_find[0])
+                        output[k] = self.parse_number(first_result)
                     else:
-                        output[k] = res_find[0]
+                        output[k] = first_result
                 else:
                     logger.warning("regexp for field %s didn't match", k)
 
